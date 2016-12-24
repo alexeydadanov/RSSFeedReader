@@ -5,6 +5,7 @@
 //  Created by Dadanov Alexey on 24.12.16.
 //  Copyright © 2016 Dadanov Alexey. All rights reserved.
 //
+//  example URL: http://images.apple.com/main/rss/hotnews/hotnews.rss
 
 #import "RSSHomeViewController.h"
 #import "RSSDetailViewController.h"
@@ -16,25 +17,46 @@
     NSMutableString *title;
     NSMutableString *link;
     NSString *element;
+    NSMutableArray *filterArray;
 }
 @end
 
 @implementation RSSHomeViewController
 
-- (void)awakeFromNib {
-    [super awakeFromNib];
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     feeds = [[NSMutableArray alloc] init];
-    
-    // XML
-    NSURL *url = [NSURL URLWithString:@"http://images.apple.com/main/rss/hotnews/hotnews.rss"];
+}
+
+- (IBAction)refreshCells:(id)sender {
+    NSLog(@"refresh");
+    [feeds removeAllObjects];
+    [self.tableView reloadData];
+   
+}
+
+#pragma mark - text Field
+
+-(BOOL)textFieldShouldReturn:(UITextField *)textField {
+    NSLog(@"Done");
+    NSURL *url = [NSURL URLWithString:_urlTextField.text];
     parser = [[NSXMLParser alloc] initWithContentsOfURL:url];
     [parser setDelegate:self];
     [parser setShouldResolveExternalEntities:NO];
     [parser parse];
+    [textField resignFirstResponder];
+
+    return YES;
+}
+
+-(BOOL)textFieldShouldClear:(UITextField *)textField {
+    NSLog(@"clear");
+  
+    [feeds removeAllObjects];
+    [self.tableView reloadData];
+    
+    [textField resignFirstResponder];
+    return YES;
 }
 
 #pragma mark - Table View
@@ -52,6 +74,8 @@
     cell.textLabel.text = [[feeds objectAtIndex:indexPath.row] objectForKey: @"title"];
     return cell;
 }
+
+#pragma mark - Parser
 
 - (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName attributes:(NSDictionary *)attributeDict {
     

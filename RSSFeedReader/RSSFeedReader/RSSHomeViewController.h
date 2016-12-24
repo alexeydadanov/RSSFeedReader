@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 
 @interface RSSHomeViewController : UITableViewController <NSXMLParserDelegate>
+@property (strong, nonatomic) IBOutlet UITextField *urlTextField;
 
 @end
 
