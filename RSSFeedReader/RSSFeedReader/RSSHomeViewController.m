@@ -17,7 +17,11 @@
     NSMutableString *title;
     NSMutableString *link;
     NSString *element;
-    NSMutableArray *filterArray;
+    NSMutableDictionary *searchDict;
+    NSMutableArray *filteredContentList;
+    BOOL isSearching;
+    
+    IBOutlet UISearchBar *searchBar;
 }
 @end
 
@@ -126,8 +130,54 @@
         NSIndexPath *indexPath = [self.tableView indexPathForSelectedRow];
         NSString *string = [feeds[indexPath.row] objectForKey: @"link"];
         [[segue destinationViewController] setUrl:string];
-        
     }
+}
+
+
+#pragma mark - searchBar
+
+- (void)searchTableList {
+    NSString *searchString = searchBar.text;
+    
+    searchDict = [[NSMutableDictionary alloc]init];
+    [searchDict setObject:feeds forKey:@"title"];
+    
+    for (NSString *tempStr in searchDict) {
+        NSComparisonResult result = [tempStr compare:searchString options:(NSCaseInsensitiveSearch|NSDiacriticInsensitiveSearch) range:NSMakeRange(0, [searchString length])];
+        if (result == NSOrderedSame) {
+            [filteredContentList addObject:tempStr];
+        }
+    }
+}
+
+- (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar {
+    isSearching = YES;
+}
+
+- (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
+    NSLog(@"Text change - %d",isSearching);
+    
+    //Remove all objects first.
+    [filteredContentList removeAllObjects];
+    [self.tableView reloadData];
+    if([searchText length] != 0) {
+        isSearching = YES;
+        [self searchTableList];
+        [self.tableView reloadData];
+    }
+    else {
+        isSearching = NO;
+    }
+    [self.tableView reloadData];
+}
+
+- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar {
+    NSLog(@"Cancel clicked");
+}
+
+- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar {
+    NSLog(@"Search Clicked");
+    [self searchTableList];
 }
 
 @end
