@@ -17,7 +17,6 @@
     NSMutableString *title;
     NSMutableString *link;
     NSString *element;
-    NSMutableDictionary *searchDict;
     NSMutableArray *filteredContentList;
     BOOL isSearching;
     
@@ -36,7 +35,6 @@
     NSLog(@"refresh");
     [feeds removeAllObjects];
     [self.tableView reloadData];
-   
 }
 
 #pragma mark - text Field
@@ -70,12 +68,21 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return feeds.count;
+    if(isSearching) {
+        return [filteredContentList count];
+    }
+    return [feeds count];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell" forIndexPath:indexPath];
-    cell.textLabel.text = [[feeds objectAtIndex:indexPath.row] objectForKey: @"title"];
+    //cell.textLabel.text = [[feeds objectAtIndex:indexPath.row] objectForKey: @"title"];
+    
+    if(!isSearching) {
+        cell.textLabel.text = [[feeds objectAtIndex:indexPath.row] objectForKey: @"title"];
+    } else {
+        cell.textLabel.text = [filteredContentList objectAtIndex:indexPath.row];
+    }
     return cell;
 }
 
@@ -90,9 +97,7 @@
         item    = [[NSMutableDictionary alloc] init];
         title   = [[NSMutableString alloc] init];
         link    = [[NSMutableString alloc] init];
-        
     }
-    
 }
 
 - (void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName {
@@ -101,11 +106,9 @@
         
         [item setObject:title forKey:@"title"];
         [item setObject:link forKey:@"link"];
-        
+
         [feeds addObject:[item copy]];
-        
     }
-    
 }
 
 - (void)parser:(NSXMLParser *)parser foundCharacters:(NSString *)string {
@@ -115,13 +118,10 @@
     } else if ([element isEqualToString:@"link"]) {
         [link appendString:string];
     }
-    
 }
 
 - (void)parserDidEndDocument:(NSXMLParser *)parser {
-    
     [self.tableView reloadData];
-    
 }
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
@@ -133,51 +133,28 @@
     }
 }
 
-
 #pragma mark - searchBar
 
-- (void)searchTableList {
-    NSString *searchString = searchBar.text;
-    
-    searchDict = [[NSMutableDictionary alloc]init];
-    [searchDict setObject:feeds forKey:@"title"];
-    
-    for (NSString *tempStr in searchDict) {
-        NSComparisonResult result = [tempStr compare:searchString options:(NSCaseInsensitiveSearch|NSDiacriticInsensitiveSearch) range:NSMakeRange(0, [searchString length])];
-        if (result == NSOrderedSame) {
-            [filteredContentList addObject:tempStr];
-        }
-    }
-}
-
-- (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar {
-    isSearching = YES;
+- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar {
+    [self.tableView resignFirstResponder];
 }
 
 - (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
-    NSLog(@"Text change - %d",isSearching);
-    
-    //Remove all objects first.
-    [filteredContentList removeAllObjects];
-    [self.tableView reloadData];
-    if([searchText length] != 0) {
-        isSearching = YES;
-        [self searchTableList];
-        [self.tableView reloadData];
-    }
-    else {
+    if(searchText.length == 0) {
         isSearching = NO;
+    } else {
+        isSearching = YES;
+        filteredContentList = [[NSMutableArray alloc]init];
+        for (NSString *str in [feeds mutableSetValueForKey:@"title"]) {
+            
+            NSRange stringRange = [str rangeOfString:searchText options:NSCaseInsensitiveSearch];
+            
+            if(stringRange.location != NSNotFound) {
+                [filteredContentList addObject:str];
+            }
+        }
     }
     [self.tableView reloadData];
-}
-
-- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar {
-    NSLog(@"Cancel clicked");
-}
-
-- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar {
-    NSLog(@"Search Clicked");
-    [self searchTableList];
 }
 
 @end
